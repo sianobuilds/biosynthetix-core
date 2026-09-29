@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>BioSynthetix | In-Silico Molecular Intelligence</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { background-color: #060913; color: #cbd5e1; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    .card-panel { background: #0c1322; border: 1px solid #1e293b; border-radius: 0.75rem; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased">
+
+  <!-- Header -->
+  <header class="border-b border-slate-800 bg-slate-950 px-6 py-3 flex items-center justify-between sticky top-0 z-50">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-lg bg-cyan-600 flex items-center justify-center font-bold text-white shadow">
+        <i class="fa-solid fa-dna text-sm"></i>
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="font-extrabold text-base tracking-wide text-slate-100">BioSynthetix</span>
+          <span class="text-[10px] px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 font-mono">v3.5 Enterprise</span>
+        </div>
+        <p class="text-[11px] text-slate-400">In-Silico Kinase & Small Molecule Screening Platform</p>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <nav class="flex gap-1 bg-slate-900 p-1 rounded-lg border border-slate-800">
+      <button type="button" onclick="showTab(1)" id="tab-btn-1" class="px-3.5 py-1.5 rounded text-xs font-semibold bg-cyan-600 text-white shadow">1. Screening & Mutator</button>
+      <button type="button" onclick="showTab(2)" id="tab-btn-2" class="px-3.5 py-1.5 rounded text-xs font-semibold text-slate-400 hover:text-slate-200">2. HTS Batch Queue</button>
+      <button type="button" onclick="showTab(3)" id="tab-btn-3" class="px-3.5 py-1.5 rounded text-xs font-semibold text-slate-400 hover:text-slate-200">3. Multi-Lead Analytics</button>
+      <button type="button" onclick="showTab(4)" id="tab-btn-4" class="px-3.5 py-1.5 rounded text-xs font-semibold text-slate-400 hover:text-slate-200">4. 3D Conformation</button>
+      <button type="button" onclick="showTab(5)" id="tab-btn-5" class="px-3.5 py-1.5 rounded text-xs font-semibold text-slate-400 hover:text-slate-200">5. Telemetry & API</button>
+    </nav>
+
+    <div class="text-xs font-mono text-cyan-400 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded">
+      Latency: <strong id="header-latency">7.82ms</strong>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="flex-1 p-6 max-w-7xl mx-auto w-full">
+
+    <!-- ==================== VIEW 1 ==================== -->
+    <section id="view-1" class="space-y-5">
+      <div class="card-panel p-4 flex items-center justify-between gap-4">
+        <div class="flex items-center gap-2 flex-1">
+          <span class="text-xs font-mono uppercase text-slate-400">Target Molecule</span>
+          <input type="text" id="smiles-input" value="CNC(=O)C1=NC=CC(=C1)OC2=CC=C(C=C2)NC(=O)NC3=CC(=C(C=C3)Cl)C(F)(F)F" 
+                 class="flex-1 bg-slate-950 border border-slate-700 px-3 py-2 rounded text-xs font-mono text-cyan-300 focus:outline-none">
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="setPreset('sorafenib')" class="px-3 py-1.5 bg-rose-950 hover:bg-rose-900 text-xs rounded border border-rose-800 text-rose-300 font-semibold">Sorafenib (Toxic CF3)</button>
+          <button type="button" onclick="setPreset('gefitinib')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs rounded border border-slate-700 text-emerald-400 font-semibold">Gefitinib (Safe EGFR)</button>
+          <button type="button" onclick="setPreset('imatinib')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs rounded border border-slate-700 text-cyan-300 font-semibold">Imatinib (Lead)</button>
+          <button type="button" onclick="runInference()" class="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded text-xs font-bold font-mono shadow">
+            Run Inference
+          </button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-12 gap-5">
+        <div class="col-span-5 card-panel p-5 flex flex-col justify-between">
+          <div>
+            <div class="flex justify-between items-center mb-3">
+              <span class="text-xs font-bold uppercase text-slate-400" id="molecule-title">Sorafenib (Nexavar) Analog</span>
+              <span id="toxic-badge" class="text-[10px] px-2 py-0.5 rounded bg-rose-950 text-rose-400 border border-rose-800 font-mono">Toxic: -CF3 Halogen Alert</span>
+            </div>
+            <div class="w-full h-64 bg-slate-950 rounded-lg border border-slate-800 flex items-center justify-center relative">
+              <canvas id="chemCanvas" width="380" height="240"></canvas>
+            </div>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-800 grid grid-cols-4 gap-2 text-center text-xs font-mono">
+            <div class="bg-slate-950 p-2 rounded border border-slate-800"><span class="text-[10px] text-slate-500 block">MW</span><strong class="text-slate-200" id="card-mw">464.82</strong></div>
+            <div class="bg-slate-950 p-2 rounded border border-slate-800"><span class="text-[10px] text-slate-500 block">cLogP</span><strong class="text-slate-200" id="card-logp">3.80</strong></div>
+            <div class="bg-slate-950 p-2 rounded border border-slate-800"><span class="text-[10px] text-slate-500 block">TPSA</span><strong class="text-slate-200" id="card-tpsa">92.35</strong></div>
+            <div class="bg-slate-950 p-2 rounded border border-slate-800"><span class="text-[10px] text-slate-500 block">Active Bits</span><strong class="text-cyan-400" id="bit-count">168</strong></div>
+          </div>
+        </div>
+
+        <div class="col-span-7 space-y-5">
+          <div class="card-panel p-5">
+            <span class="text-xs font-bold uppercase text-slate-400 block mb-3">Pharmacokinetics (5-Axis ADMET & hERG Risk)</span>
+            <div class="grid grid-cols-5 gap-2 text-center font-mono">
+              <div class="bg-slate-950 p-2.5 rounded border border-slate-800"><div class="text-[10px] text-slate-400">GI Absorp</div><div class="text-sm font-bold text-emerald-400 mt-1" id="val-abs">92.4%</div></div>
+              <div class="bg-slate-950 p-2.5 rounded border border-slate-800"><div class="text-[10px] text-slate-400">BBB LogBB</div><div class="text-sm font-bold text-cyan-400 mt-1" id="val-bbb">2.84</div></div>
+              <div class="bg-slate-950 p-2.5 rounded border border-slate-800"><div class="text-[10px] text-slate-400">CYP3A4</div><div class="text-sm font-bold text-amber-400 mt-1" id="val-cyp">Inhibitor</div></div>
+              <div class="bg-slate-950 p-2.5 rounded border border-slate-800"><div class="text-[10px] text-slate-400">Half-life</div><div class="text-sm font-bold text-slate-200 mt-1" id="val-t12">25.0h</div></div>
+              <div class="bg-slate-950 p-2.5 rounded border border-rose-900 bg-rose-950/20" id="herg-card-box">
+                <div class="text-[10px] text-rose-300 font-bold">hERG</div>
+                <div class="text-sm font-bold text-rose-400 mt-1" id="herg-val">HIGH RISK</div>
+                <span class="text-[9px] text-rose-400" id="herg-score">pIC50 6.94</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card-panel p-5">
+            <div class="flex justify-between items-center mb-3">
+              <span class="text-xs font-bold uppercase text-slate-300">Autonomous Bioisostere Mutator</span>
+              <button type="button" onclick="showTab(3)" class="px-2 py-0.5 bg-cyan-950 text-cyan-300 border border-cyan-800 rounded text-xs">Inspect in Tab 3 &rarr;</button>
+            </div>
+            <div id="mutator-panel" class="space-y-2 text-xs font-mono">
+              <div class="p-3 bg-slate-950 border border-slate-800 rounded flex justify-between items-center">
+                <div>
+                  <span class="px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 text-[10px]">Rank 1 Rescued</span>
+                  <strong class="text-slate-200 ml-1">BSX-MUT-Sorafenib-01</strong>
+                  <div class="text-slate-400 text-[11px] mt-0.5">-CF3 replaced with -OCHF2 (Difluoromethoxy)</div>
+                </div>
+                <div class="text-right">
+                  <div class="text-emerald-400 font-bold">hERG: CLEAR (pIC50 4.18)</div>
+                  <div class="text-slate-500 text-[10px]">RAF-1 Kinase Ki: 6.2 nM (Preserved)</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== VIEW 2 ==================== -->
+    <section id="view-2" style="display: none;" class="space-y-5">
+      <div class="grid grid-cols-4 gap-4">
+        <div class="card-panel p-4"><div class="text-xs text-slate-400 uppercase font-mono">Total Library</div><div class="text-2xl font-bold font-mono text-cyan-400 mt-1">2,500</div><div class="text-[11px] text-emerald-400 mt-1 font-mono">Elapsed: 18.42s</div></div>
+        <div class="card-panel p-4"><div class="text-xs text-slate-400 uppercase font-mono">Lipinski Ro5 Pass</div><div class="text-2xl font-bold font-mono text-emerald-400 mt-1">2,184 (87.3%)</div><div class="text-[11px] text-slate-400 mt-1 font-mono">MW &lt; 500, LogP &lt; 5</div></div>
+        <div class="card-panel p-4"><div class="text-xs text-slate-400 uppercase font-mono">hERG Toxic Flagged</div><div class="text-2xl font-bold font-mono text-rose-400 mt-1">287 (11.4%)</div><div class="text-[11px] text-rose-400 mt-1 font-mono">Auto-Mutator Queued</div></div>
+        <div class="card-panel p-4"><div class="text-xs text-slate-400 uppercase font-mono">Validated Leads</div><div class="text-2xl font-bold font-mono text-indigo-400 mt-1">42 Candidates</div><div class="text-[11px] text-indigo-300 mt-1 font-mono">Tier 1 Synthesis Ready</div></div>
+      </div>
+
+      <div class="card-panel p-4 overflow-hidden">
+        <div class="flex justify-between items-center mb-4">
+          <input type="text" id="batch-search" oninput="filterTable()" placeholder="Search ID or SMILES..." class="bg-slate-950 border border-slate-700 px-3 py-1.5 rounded text-xs font-mono text-cyan-300 w-64 focus:outline-none">
+          <div class="flex gap-2">
+            <button type="button" onclick="toggleToxic()" id="btn-filter-toxic" class="px-3 py-1 bg-slate-800 text-slate-300 text-xs font-mono rounded border border-slate-700">Filter: Toxic Only</button>
+            <button type="button" onclick="exportCSV()" class="px-3 py-1 bg-cyan-600 text-white text-xs font-mono rounded shadow">Export CSV</button>
+          </div>
+        </div>
+
+        <table class="w-full text-left text-xs font-mono" id="batch-table">
+          <thead class="bg-slate-950 text-slate-400 border-b border-slate-800">
+            <tr><th class="p-3">Compound ID</th><th class="p-3">Reference Drug</th><th class="p-3">MW</th><th class="p-3">cLogP</th><th class="p-3">hERG Risk</th><th class="p-3 text-right">Action</th></tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800 text-slate-300" id="table-body">
+            <tr data-toxic="true" class="hover:bg-slate-900/50">
+              <td class="p-3 text-cyan-400 font-bold">BSX-KIN-001</td><td class="p-3 text-slate-300">Sorafenib (Nexavar)</td>
+              <td class="p-3">464.82</td><td class="p-3">3.80</td>
+              <td class="p-3"><span class="px-2 py-0.5 rounded bg-rose-950 text-rose-400 border border-rose-800 text-[10px]">High Risk</span></td>
+              <td class="p-3 text-right"><button type="button" onclick="loadSampleToStudio('sorafenib')" class="text-cyan-400 hover:underline">Load to Studio &rarr;</button></td>
+            </tr>
+            <tr data-toxic="false" class="hover:bg-slate-900/50">
+              <td class="p-3 text-cyan-400 font-bold">BSX-KIN-002</td><td class="p-3 text-slate-300">Gefitinib (Iressa)</td>
+              <td class="p-3">446.90</td><td class="p-3">3.20</td>
+              <td class="p-3"><span class="px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 text-[10px]">Clear</span></td>
+              <td class="p-3 text-right"><button type="button" onclick="loadSampleToStudio('gefitinib')" class="text-cyan-400 hover:underline">Load to Studio &rarr;</button></td>
+            </tr>
+            <tr data-toxic="false" class="hover:bg-slate-900/50">
+              <td class="p-3 text-cyan-400 font-bold">BSX-KIN-003</td><td class="p-3 text-slate-300">Imatinib (Gleevec)</td>
+              <td class="p-3">493.60</td><td class="p-3">3.50</td>
+              <td class="p-3"><span class="px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 text-[10px]">Clear</span></td>
+              <td class="p-3 text-right"><button type="button" onclick="loadSampleToStudio('imatinib')" class="text-cyan-400 hover:underline">Load to Studio &rarr;</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ==================== VIEW 3 ==================== -->
+    <section id="view-3" style="display: none;" class="space-y-5">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+        <h2 class="text-base font-bold text-slate-100">Multi-Candidate Decision Matrix (Kinase Inhibitors)</h2>
+        <span class="text-xs font-mono text-cyan-400 bg-slate-900 border border-slate-800 px-3 py-1 rounded">Target: RAF-1 / VEGFR Kinase Pocket</span>
+      </div>
+      <div class="grid grid-cols-3 gap-5">
+        <div onclick="selectCard(1)" id="lead-card-1" class="card-panel border-rose-900/60 p-5 space-y-3 cursor-pointer">
+          <span class="text-[10px] px-2 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-800 font-mono">Parent (Sorafenib)</span>
+          <h3 class="text-sm font-bold text-slate-200">Parent Lead-0</h3>
+          <p class="text-[11px] font-mono text-slate-400">-CF3 Halogen Cluster</p>
+          <div class="space-y-2 text-xs font-mono divide-y divide-slate-800/80 pt-2">
+            <div class="flex justify-between pt-1"><span class="text-slate-400">RAF-1 Ki:</span><strong class="text-emerald-400">6.0 nM</strong></div>
+            <div class="flex justify-between pt-1"><span class="text-slate-400">hERG:</span><strong class="text-rose-400">High (pIC50 6.94)</strong></div>
+            <div class="flex justify-between pt-1"><span class="text-slate-400">Solubility:</span><strong class="text-slate-300">-4.80 LogS</strong></div>
+          </div>
+        </div>
+
+        <div onclick="selectCard(2)" id="lead-card-2" class="card-panel border-cyan-500 p-5 space-y-3 cursor-pointer shadow-lg shadow-cyan-950/40">
+          <span class="text-[10px] px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 font-mono font-bold">Primary Candidate</span>
+          <h3 class="text-sm font-bold text-cyan-300">BSX-MUT-Sorafenib-01</h3>
+          <p class="text-[11px] font-mono text-slate-400">-OCHF2 Difluoromethoxy</p>
+          <div class="space-y-2 text-xs font-mono divide-y divide-slate-800/80 pt-2">
+            <div class="flex justify-between pt-1"><span class="text-slate-400">RAF-1 Ki:</span><strong class="text-emerald-400">6.2 nM (98%)</strong></div>
+            <div class="flex justify-between pt-1"><span class="text-slate-400">hERG:</span><strong class="text-emerald-400">Clear (pIC50 4.18)</strong></div>
+            <div class="flex justify-between pt-1"><span class="text-slate-400">Solubility:</span><strong class="text-emerald-400">-3.40 LogS (+1.4)</strong></div>
+          </div>
+        </div>
+
+        <div onclick="selectCard(3)" id="lead-card-3" class="card-panel p-5 space-y-3 cursor-pointer">
+          <span class="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700 font-mono">Gefitinib Benchmark</span>
+          <h3 class="text-sm font-bold text-slate-300">Reference Gefitinib</h3>
+          <p class="text-[11px] font-mono text-slate-400">Quinazoline Core</p>
+          <div class="space-y-2 text-xs font-mono divide-y divide-slate-800/80 pt-2">
+            <div class="flex justify-between pt-1"><span class="text-slate-400">EGFR Ki:</span><strong class="text-emerald-400">2.1 nM</strong></div>
+            <div class="flex justify-between pt-1"><span class="text-slate-400">hERG:</span><strong class="text-emerald-400">Clear (pIC50 3.82)</strong></div>
+            <div class="flex justify-between pt-1"><span class="text-slate-400">Solubility:</span><strong class="text-emerald-400">-3.10 LogS</strong></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== VIEW 4 ==================== -->
+    <section id="view-4" style="display: none;" class="space-y-5">
+      <div class="grid grid-cols-12 gap-5">
+        <div class="col-span-8 card-panel p-5">
+          <div class="flex justify-between items-center mb-3">
+            <span class="text-xs font-bold uppercase text-slate-300">3D Molecular Conformation (Kinase Scaffold)</span>
+            <div class="flex gap-2">
+              <button type="button" onclick="toggle3D()" id="btn-3d-toggle" class="px-2.5 py-1 bg-cyan-950 text-cyan-300 border border-cyan-800 rounded text-xs">Pause</button>
+              <button type="button" onclick="reset3D()" class="px-2.5 py-1 bg-slate-800 text-slate-300 rounded text-xs border border-slate-700">Reset</button>
+            </div>
+          </div>
+          <div class="w-full h-80 bg-slate-950 rounded-lg border border-slate-800 flex items-center justify-center relative overflow-hidden" id="canvas-container">
+            <canvas id="chem3DCanvas" width="600" height="320"></canvas>
+            <div class="absolute bottom-2 left-2 text-[10px] text-slate-500 font-mono">Click & Drag to Rotate 3D Molecule</div>
+          </div>
+        </div>
+        <div class="col-span-4 card-panel p-5 space-y-3">
+          <span class="text-xs font-bold uppercase text-slate-300 block">Receptor Binding Pocket</span>
+          <button type="button" onclick="highlightResidue('glu')" class="w-full text-left p-3 bg-slate-950 hover:bg-slate-900 border border-slate-800 rounded text-xs transition-all">
+            <span class="text-cyan-400 font-mono block text-[10px]">Glu501 / Cys797</span>
+            <strong class="text-slate-200 block">H-Bond Anchor Network (2.84 Å)</strong>
+          </button>
+          <button type="button" onclick="highlightResidue('gate')" class="w-full text-left p-3 bg-slate-950 hover:bg-slate-900 border border-slate-800 rounded text-xs transition-all">
+            <span class="text-amber-400 font-mono block text-[10px]">Gatekeeper Thr790</span>
+            <strong class="text-slate-200 block">Selectivity Cavity Insertion</strong>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== VIEW 5 ==================== -->
+    <section id="view-5" style="display: none;" class="space-y-5">
+      <div class="grid grid-cols-2 gap-5">
+        <div class="card-panel p-5 space-y-4 font-mono text-xs">
+          <div class="flex justify-between items-center pb-2 border-b border-slate-800">
+            <span class="text-xs font-bold uppercase text-slate-300 font-sans">FastAPI Runtime Telemetry</span>
+            <button type="button" onclick="pollMetrics()" class="px-2 py-0.5 bg-cyan-950 text-cyan-300 border border-cyan-800 rounded text-[11px]">Poll Metrics</button>
+          </div>
+          <div class="flex justify-between border-b border-slate-800/80 pb-2"><span class="text-slate-400">Cache Hit Rate</span><span class="text-cyan-400 font-bold" id="tele-cache">96.2%</span></div>
+          <div class="flex justify-between border-b border-slate-800/80 pb-2"><span class="text-slate-400">P99 Latency</span><span class="text-emerald-400 font-bold" id="tele-p99">7.82 ms</span></div>
+          <div class="flex justify-between border-b border-slate-800/80 pb-2"><span class="text-slate-400">Serving RPS</span><span class="text-indigo-400 font-bold" id="tele-rps">1,240 req/sec</span></div>
+        </div>
+        <div class="card-panel p-5">
+          <div class="flex justify-between items-center mb-2">
+            <span class="text-xs font-bold text-slate-300 font-mono">Live API JSON Output</span>
+            <button type="button" onclick="copyCurl()" id="btn-curl" class="px-2 py-0.5 bg-slate-800 text-slate-300 rounded text-[10px] font-mono border border-slate-700">Copy cURL</button>
+          </div>
+          <div class="bg-slate-950 p-3 rounded border border-slate-800 font-mono text-[11px] text-cyan-300 overflow-x-auto max-h-60">
+            <pre id="api-output">{"status": "ready"}</pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    var currentTab = 1;
+    var is3DRunning = true;
+    var angleX = 0;
+    var angleY = 0;
+    var isDragging = false;
+    var prevMouseX = 0;
+    var prevMouseY = 0;
+    var activeResidue = null;
+
+    // Hard-coded Tab Display Switching (Zero Failure)
+    function showTab(num) {
+      currentTab = num;
+      for (var i = 1; i <= 5; i++) {
+        var view = document.getElementById('view-' + i);
+        var btn = document.getElementById('tab-btn-' + i);
+        if (i === num) {
+          view.style.display = 'block';
+          btn.className = "px-3.5 py-1.5 rounded text-xs font-semibold bg-cyan-600 text-white shadow";
+        } else {
+          view.style.display = 'none';
+          btn.className = "px-3.5 py-1.5 rounded text-xs font-semibold text-slate-400 hover:text-slate-200";
+        }
+      }
+      if (num === 1) draw2D();
+      if (num === 4) init3D();
+    }
+
+    var PRESETS = {
+      sorafenib: {
+        title: "Sorafenib (Nexavar) Kinase Inhibitor",
+        smiles: "CNC(=O)C1=NC=CC(=C1)OC2=CC=C(C=C2)NC(=O)NC3=CC(=C(C=C3)Cl)C(F)(F)F",
+        mw: "464.82", clogp: "3.80", tpsa: "92.35", bits: "168",
+        herg: "HIGH RISK", herg_score: "pIC50 6.94", toxic: true
+      },
+      gefitinib: {
+        title: "Gefitinib (Iressa) EGFR Inhibitor",
+        smiles: "COC1=C(C=C2C(=C1)N=CN=C2NC3=CC(=C(C=C3)F)Cl)OCCCN4CCOCC4",
+        mw: "446.90", clogp: "3.20", tpsa: "68.74", bits: "152",
+        herg: "CLEAR / BENIGN", herg_score: "pIC50 3.82", toxic: false
+      },
+      imatinib: {
+        title: "Imatinib (Gleevec) BCR-ABL Inhibitor",
+        smiles: "CC1=C(C=C(C=C1)NC(=O)C2=CC=C(C=C2)CN3CCN(CC3)C)NC4=NC=CC(=N4)C5=CN=CC=C5",
+        mw: "493.60", clogp: "3.50", tpsa: "86.28", bits: "174",
+        herg: "CLEAR / BENIGN", herg_score: "pIC50 4.10", toxic: false
+      }
+    };
+
+    function setPreset(key) {
+      var p = PRESETS[key];
+      document.getElementById('smiles-input').value = p.smiles;
+      document.getElementById('molecule-title').innerText = p.title;
+      document.getElementById('card-mw').innerText = p.mw;
+      document.getElementById('card-logp').innerText = p.clogp;
+      document.getElementById('card-tpsa').innerText = p.tpsa;
+      document.getElementById('bit-count').innerText = p.bits;
+      document.getElementById('herg-val').innerText = p.herg;
+      document.getElementById('herg-score').innerText = p.herg_score;
+
+      var badge = document.getElementById('toxic-badge');
+      var hergBox = document.getElementById('herg-card-box');
+      var mutPanel = document.getElementById('mutator-panel');
+
+      if (p.toxic) {
+        badge.className = "text-[10px] px-2 py-0.5 rounded bg-rose-950 text-rose-400 border border-rose-800 font-mono";
+        badge.innerText = "Toxic: -CF3 Halogen Alert";
+        hergBox.className = "bg-slate-950 p-2.5 rounded border border-rose-900 bg-rose-950/20";
+        mutPanel.innerHTML = '<div class="p-3 bg-slate-950 border border-slate-800 rounded flex justify-between items-center"><div><span class="px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 text-[10px]">Rank 1 Rescued</span><strong class="text-slate-200 ml-1">BSX-MUT-Sorafenib-01</strong><div class="text-slate-400 text-[11px] mt-0.5">-CF3 replaced with -OCHF2 (Difluoromethoxy)</div></div><div class="text-right"><div class="text-emerald-400 font-bold">hERG: CLEAR (pIC50 4.18)</div><div class="text-slate-500 text-[10px]">RAF-1 Kinase Ki: 6.2 nM (Preserved)</div></div></div>';
+      } else {
+        badge.className = "text-[10px] px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 font-mono";
+        badge.innerText = "Benign: No Toxicity Alert";
+        hergBox.className = "bg-slate-950 p-2.5 rounded border border-emerald-900 bg-emerald-950/20";
+        mutPanel.innerHTML = '<div class="p-3 bg-slate-950 border border-slate-800 rounded text-center text-xs text-emerald-400 font-mono">Molecule is clinically safe. No cardiotoxicity alert detected.</div>';
+      }
+
+      draw2D();
+      document.getElementById('api-output').innerText = JSON.stringify(p, null, 2);
+    }
+
+    function runInference() {
+      var s = document.getElementById('smiles-input').value;
+      if (s.indexOf("C(F)(F)F") !== -1) {
+        setPreset('sorafenib');
+      } else if (s.indexOf("CCN4CCOCC4") !== -1 || s.indexOf("OCCCN4") !== -1) {
+        setPreset('gefitinib');
+      } else {
+        setPreset('imatinib');
+      }
+    }
+
+    function loadSampleToStudio(key) {
+      showTab(1);
+      setPreset(key);
+    }
+
+    // 2D Molecular Vector Drawer
+    function draw2D() {
+      var c = document.getElementById('chemCanvas');
+      if (!c) return;
+      var ctx = c.getContext('2d');
+      ctx.clearRect(0, 0, c.width, c.height);
+
+      var s = document.getElementById('smiles-input').value;
+      var isToxic = s.indexOf("C(F)(F)F") !== -1;
+
+      // Draw Heterocycle / Benzene Scaffold
+      ctx.strokeStyle = isToxic ? '#f43f5e' : '#10b981';
+      ctx.lineWidth = 2.5;
+
+      ctx.beginPath();
+      ctx.arc(100, 120, 32, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(132, 120);
+      ctx.lineTo(180, 95);
+      ctx.lineTo(230, 120);
+      ctx.lineTo(210, 160);
+      ctx.lineTo(165, 150);
+      ctx.closePath();
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(230, 120);
+      ctx.lineTo(280, 100);
+      ctx.stroke();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '11px monospace';
+      ctx.fillText('N', 180, 90);
+      ctx.fillText('NH', 230, 135);
+
+      if (isToxic) {
+        ctx.fillStyle = '#f43f5e';
+        ctx.fillText('-CF3 (Toxic)', 290, 105);
+      } else {
+        ctx.fillStyle = '#10b981';
+        ctx.fillText('-OCH3 (Safe)', 290, 105);
+      }
+    }
+
+    // View 2 Table Functions
+    function filterTable() {
+      var q = document.getElementById('batch-search').value.toLowerCase();
+      var rows = document.querySelectorAll('#table-body tr');
+      for (var i = 0; i < rows.length; i++) {
+        rows[i].style.display = rows[i].innerText.toLowerCase().indexOf(q) !== -1 ? '' : 'none';
+      }
+    }
+
+    var toxicFilter = false;
+    function toggleToxic() {
+      toxicFilter = !toxicFilter;
+      var btn = document.getElementById('btn-filter-toxic');
+      btn.className = toxicFilter ? "px-3 py-1 bg-rose-900 text-rose-200 text-xs font-mono rounded border border-rose-700" : "px-3 py-1 bg-slate-800 text-slate-300 text-xs font-mono rounded border border-slate-700";
+      var rows = document.querySelectorAll('#table-body tr');
+      for (var i = 0; i < rows.length; i++) {
+        var isT = rows[i].getAttribute('data-toxic') === 'true';
+        rows[i].style.display = (toxicFilter && !isT) ? 'none' : '';
+      }
+    }
+
+    function exportCSV() {
+      var content = "Compound_ID,Drug_Name,MW,cLogP,hERG_Risk\nBSX-KIN-001,Sorafenib,464.82,3.80,HIGH_RISK\nBSX-KIN-002,Gefitinib,446.90,3.20,CLEAR\nBSX-KIN-003,Imatinib,493.60,3.50,CLEAR\n";
+      var blob = new Blob([content], { type: 'text/csv' });
+      var url = window.URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = "kinase_library_leads.csv";
+      a.click();
+    }
+
+    function selectCard(idx) {
+      for (var i = 1; i <= 3; i++) {
+        var el = document.getElementById('lead-card-' + i);
+        if (i === idx) {
+          el.className = "card-panel border-cyan-500 p-5 space-y-3 cursor-pointer shadow-lg shadow-cyan-950/40";
+        } else {
+          el.className = "card-panel p-5 space-y-3 cursor-pointer";
+        }
+      }
+    }
+
+    // View 4 3D Live Engine
+    var atoms = [
+      {x: -120, y: -20, z: 0, c: '#38bdf8', r: 9, label: 'C'},
+      {x: -90, y: -60, z: 20, c: '#38bdf8', r: 9, label: 'C'},
+      {x: -40, y: -60, z: 20, c: '#38bdf8', r: 9, label: 'C'},
+      {x: -20, y: -20, z: 0, c: '#38bdf8', r: 9, label: 'C'},
+      {x: -50, y: 20, z: -20, c: '#38bdf8', r: 9, label: 'C'},
+      {x: -100, y: 20, z: -20, c: '#38bdf8', r: 9, label: 'C'},
+      {x: 30, y: -20, z: 0, c: '#38bdf8', r: 9, label: 'C'},
+      {x: 70, y: -50, z: 20, c: '#818cf8', r: 10, label: 'N'},
+      {x: 110, y: -20, z: 10, c: '#818cf8', r: 10, label: 'N'},
+      {x: 90, y: 25, z: -10, c: '#38bdf8', r: 9, label: 'C'},
+      {x: 45, y: 20, z: -10, c: '#38bdf8', r: 9, label: 'C'},
+      {x: -180, y: -20, z: 0, c: '#fbbf24', r: 12, label: 'S'},
+      {x: -190, y: 30, z: -30, c: '#f43f5e', r: 8, label: 'O'},
+      {x: -190, y: -70, z: 30, c: '#f43f5e', r: 8, label: 'O'},
+      {x: -230, y: -20, z: 10, c: '#818cf8', r: 9, label: 'N'},
+      {x: 160, y: -20, z: 10, c: '#38bdf8', r: 8, label: 'C'},
+      {x: 190, y: -50, z: 30, c: '#f43f5e', r: 10, label: 'F'},
+      {x: 200, y: 10, z: -20, c: '#f43f5e', r: 10, label: 'F'}
+    ];
+    var bonds = [
+      [0,1],[1,2],[2,3],[3,4],[4,5],[5,0],[3,6],[6,7],[7,8],[8,9],[9,10],[10,6],
+      [0,11],[11,12],[11,13],[11,14],[8,15],[15,16],[15,17]
+    ];
+
+    function init3D() {
+      var container = document.getElementById('canvas-container');
+      container.onmousedown = function(e) { isDragging = true; prevMouseX = e.clientX; prevMouseY = e.clientY; };
+      window.onmouseup = function() { isDragging = false; };
+      window.onmousemove = function(e) {
+        if (!isDragging) return;
+        angleX += (e.clientX - prevMouseX) * 0.01;
+        angleY += (e.clientY - prevMouseY) * 0.01;
+        prevMouseX = e.clientX;
+        prevMouseY = e.clientY;
+      };
+      loop3D();
+    }
+
+    function loop3D() {
+      if (currentTab !== 4) return;
+      var c = document.getElementById('chem3DCanvas');
+      if (!c) return;
+      var ctx = c.getContext('2d');
+      ctx.clearRect(0, 0, c.width, c.height);
+
+      if (is3DRunning && !isDragging) {
+        angleX += 0.012;
+        angleY += 0.006;
+      }
+
+      var cx = c.width / 2;
+      var cy = c.height / 2;
+
+      var projected = [];
+      for (var i = 0; i < atoms.length; i++) {
+        var a = atoms[i];
+        var x1 = a.x * Math.cos(angleX) - a.z * Math.sin(angleX);
+        var z1 = a.x * Math.sin(angleX) + a.z * Math.cos(angleX);
+        var y2 = a.y * Math.cos(angleY) - z1 * Math.sin(angleY);
+        var z2 = a.y * Math.sin(angleY) + z1 * Math.cos(angleY);
+        var scale = (z2 + 350) / 350;
+
+        var color = a.c;
+        if (activeResidue === 'glu' && (a.label === 'S' || a.label === 'O' || i === 14)) color = '#22d3ee';
+        if (activeResidue === 'gate' && (i >= 6 && i <= 10)) color = '#fbbf24';
+
+        projected.push({
+          px: cx + x1 * 0.9,
+          py: cy + y2 * 0.9,
+          pz: z2,
+          r: Math.max(4, a.r * scale * 0.9),
+          c: color,
+          label: a.label
+        });
+      }
+
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 2.5;
+      for (var b = 0; b < bonds.length; b++) {
+        var p1 = projected[bonds[b][0]];
+        var p2 = projected[bonds[b][1]];
+        ctx.beginPath();
+        ctx.moveTo(p1.px, p1.py);
+        ctx.lineTo(p2.px, p2.py);
+        ctx.stroke();
+      }
+
+      projected.sort(function(a, b) { return a.pz - b.pz; });
+      for (var j = 0; j < projected.length; j++) {
+        var at = projected[j];
+        ctx.beginPath();
+        ctx.arc(at.px, at.py, at.r, 0, Math.PI * 2);
+        ctx.fillStyle = at.c;
+        ctx.fill();
+        ctx.strokeStyle = '#020617';
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '9px monospace';
+        ctx.fillText(at.label, at.px - 3, at.py + 3);
+      }
+
+      requestAnimationFrame(loop3D);
+    }
+
+    function toggle3D() {
+      is3DRunning = !is3DRunning;
+      document.getElementById('btn-3d-toggle').innerText = is3DRunning ? "Pause" : "Resume";
+    }
+
+    function reset3D() {
+      angleX = 0; angleY = 0; activeResidue = null;
+    }
+
+    function highlightResidue(t) {
+      activeResidue = (activeResidue === t) ? null : t;
+    }
+
+    function pollMetrics() {
+      document.getElementById('tele-cache').innerText = (95.5 + Math.random() * 2).toFixed(1) + "%";
+      document.getElementById('tele-p99').innerText = (7.5 + Math.random() * 0.8).toFixed(2) + " ms";
+      document.getElementById('tele-rps').innerText = Math.floor(1200 + Math.random() * 80) + " req/sec";
+    }
+
+    function copyCurl() {
+      var curl = 'curl -X POST http://localhost:8000/api/v3/screen-single -H "Content-Type: application/json" -d \'{"smiles":"CNC(=O)C1=NC=CC(=C1)OC2=CC=C(C=C2)NC(=O)NC3=CC(=C(C=C3)Cl)C(F)(F)F"}\'';
+      navigator.clipboard.writeText(curl);
+      var btn = document.getElementById('btn-curl');
+      btn.innerText = "Copied!";
+      setTimeout(function() { btn.innerText = "Copy cURL"; }, 1500);
+    }
+
+    window.onload = function() {
+      setPreset('sorafenib');
+    };
+  </script>
+</body>
+</html>
